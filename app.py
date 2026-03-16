@@ -1,15 +1,16 @@
-
-
 from flask import Flask, render_template, request
-
+import sqlite3
 app = Flask(__name__)
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
-        f = open("users.txt", "w")
-        f.write(request.form['pw'])
-        f.close()
+        con = sqlite3.connect("database.db")
+        cur = con.cursor()
+        cur.execute("INSERT INTO users (username, password) VALUES (?, ?)", (request.form['username'], request.form['pw']))
+        con.commit()
+        con.close()
+        return "User created successfully!"
     return render_template("signup.html")
 
 
@@ -17,10 +18,11 @@ def signup():
 def home():
     if request.method == "POST":
         pw = request.form['pw']
-        f = open("users.txt", "r")
-        stored_pw = f.read()
-        f.close()
-        if pw == stored_pw:
+        con = sqlite3.connect("database.db")
+        cur = con.cursor()
+        cur.execute("SELECT * FROM users WHERE username = ? AND password = ?", (request.form['username'], request.form['pw']))
+        result = cur.fetchone()
+        if result:
             return "Correct password!"
         else:
             return "Incorrect password!"
